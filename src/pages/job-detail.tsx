@@ -220,7 +220,9 @@ export function JobDetailPage() {
                 </h2>
                 <p className="mb-3 text-muted-foreground text-xs">Tick the lines that are true and you want in the CV for this job.</p>
                 {s.green_items.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">Nothing to add: the CV already covers what you have.</p>
+                  <p className="rounded-md bg-muted px-3 py-2 text-sm">
+                    Nothing to add for this job. Your master CV already covers what it asks for, so apply with your master CV as it is.
+                  </p>
                 ) : (
                   <ul className="divide-y rounded-md border">
                     {s.green_items.map((g) => {
@@ -228,7 +230,12 @@ export function JobDetailPage() {
                       return (
                         <li key={g.id}>
                           <label className={cn("flex cursor-pointer items-start gap-3 p-3", on && "bg-emerald-600/5")}>
-                            <Checkbox checked={on} className="mt-0.5" onCheckedChange={() => void toggleTick(job.id, g.id)} />
+                            <Checkbox
+                              aria-label={`Add ${g.keyword} line to the CV for this job`}
+                              checked={on}
+                              className="mt-0.5 size-5 border-2 border-foreground/50"
+                              onCheckedChange={() => void toggleTick(job.id, g.id)}
+                            />
                             <span className="min-w-0 flex-1">
                               <span className="flex items-center justify-between gap-2">
                                 <span className="font-medium text-sm">{g.keyword}</span>
@@ -242,6 +249,7 @@ export function JobDetailPage() {
                     })}
                   </ul>
                 )}
+                {s.green_items.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     disabled={ticked.length === 0 || tailorPending}
@@ -254,9 +262,10 @@ export function JobDetailPage() {
                     <CopyIcon /> Copy lines for Overleaf
                   </Button>
                 </div>
+                )}
                 <div aria-live="polite" className="mt-2 text-xs">
-                  {ticked.length === 0 && !tailorRequest && !s.tailored_cv_path && (
-                    <p className="text-muted-foreground">Tick at least one line to copy it or make a tailored CV.</p>
+                  {s.green_items.length > 0 && ticked.length === 0 && !tailorRequest && !s.tailored_cv_path && (
+                    <p className="font-medium text-amber-800 dark:text-amber-300">Tick the box next to at least one line above. The two buttons switch on once a line is ticked.</p>
                   )}
                   {tailorPending && (
                     <p className="flex items-center gap-1.5 text-muted-foreground">
