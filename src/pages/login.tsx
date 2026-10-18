@@ -55,7 +55,11 @@ export function LoginPage() {
             <Button disabled={state === "sending" || !supabaseConfigured} type="submit">
               {state === "sending" ? "Sending..." : "Email me a sign-in link"}
             </Button>
-            {!supabaseConfigured && <p className="text-destructive text-xs">Supabase keys are missing from .env.local.</p>}
+            {!supabaseConfigured && (
+              <p className="text-destructive text-xs" role="alert">
+                Sign-in is off: this build has no Supabase keys. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Netlify, then redeploy.
+              </p>
+            )}
             {state === "error" && (
               <p className="text-destructive text-xs" role="alert">
                 {message}
