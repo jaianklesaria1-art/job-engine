@@ -9,7 +9,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { DashboardCard } from "@/components/dashboard-card";
 import { FreshnessBadge, SponsorBadge, scoreAfterTicks } from "@/components/job-bits";
 import { useData } from "@/lib/data";
-import { postedLabel, remoteLabel, timeAgo } from "@/lib/format";
+import { postedLabel, remoteLabel, sourceLinks, timeAgo } from "@/lib/format";
 import { STATUS_LABEL, type JobEvent, type ScorePart } from "@/lib/types";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 
@@ -60,6 +60,7 @@ export function JobDetailPage() {
   const c = job.company;
   const after = scoreAfterTicks(job);
   const applyUrl = job.apply_url ?? job.urls[0];
+  const links = sourceLinks(job);
   const applied = ["applied", "contacted", "replied", "interview", "offer"].includes(job.status);
   const tailorRequest = requests.find((r) => r.kind === "tailor_cv" && r.payload.job_id === job.id);
   const tailorPending = tailorRequest?.status === "pending";
@@ -97,6 +98,18 @@ export function JobDetailPage() {
                 {job.salary_text && ` · ${job.salary_text}`}
               </span>
             </p>
+            {links.length > 0 && (
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span className="text-muted-foreground">Found on</span>
+                {links.map((l) => (
+                  <a className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground" href={l.url} key={l.url} rel="noreferrer" target="_blank">
+                    {l.label}
+                    <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
+                    <span className="sr-only">(opens the job post in a new tab)</span>
+                  </a>
+                ))}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {applyUrl && (

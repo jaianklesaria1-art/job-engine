@@ -116,7 +116,7 @@ function job(
     posted_at: hoursAgo(hours),
     first_seen_at: hoursAgo(Math.max(0, hours - 1)),
     sources: ["Sample source"],
-    urls: [],
+    urls: ["https://example.com/sample-job-post"],
     apply_url: null,
     description:
       "Sample job description. We're looking for a designer who can run user research, turn findings into flows and prototypes in Figma, and work closely with engineers. Experience with design systems, usability testing and analytics tools is a plus.",

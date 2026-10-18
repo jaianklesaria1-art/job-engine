@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FreshnessBadge, ScoreBadge, SponsorBadge } from "@/components/job-bits";
-import { postedLabel, remoteLabel } from "@/lib/format";
+import { ExternalLinkIcon } from "lucide-react";
+import { postedLabel, remoteLabel, sourceLinks } from "@/lib/format";
 import { STATUS_LABEL, type Job } from "@/lib/types";
 import { useData } from "@/lib/data";
 
@@ -61,7 +62,20 @@ export function JobCard({ job, selected, compact }: { job: Job; selected?: boole
         {job.status !== "found" && (
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px]">{STATUS_LABEL[job.status]}</span>
         )}
-        <span className="truncate text-[11px] text-muted-foreground">{job.sources.join(", ")}</span>
+        {sourceLinks(job).slice(0, 3).map((l) => (
+          <a
+            className="relative z-10 inline-flex items-center gap-0.5 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            href={l.url}
+            key={l.url}
+            onPointerDown={(e) => e.stopPropagation()}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {l.label}
+            <ExternalLinkIcon aria-hidden="true" className="size-3" />
+            <span className="sr-only">(job post, opens in a new tab)</span>
+          </a>
+        ))}
       </div>
 
       {!compact && job.status === "found" && (

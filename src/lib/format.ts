@@ -56,3 +56,19 @@ export function greeting() {
   if (h < 18) return "Good afternoon";
   return "Good evening";
 }
+
+/** Each link the bots saved for a job, labelled by the site it came from. */
+export function sourceLinks(job: Pick<Job, "urls" | "sources">) {
+  const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return [...new Set(job.urls)].map((url) => {
+    let host = url;
+    try {
+      host = new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      /* keep the raw string */
+    }
+    const named = job.sources.find((s) => compact(host).includes(compact(s).replace(/careers$/, "")));
+    const ats = /greenhouse|lever\.co|ashbyhq/.test(host) ? job.sources.find((s) => s.endsWith("careers")) : undefined;
+    return { url, label: named ?? ats ?? host };
+  });
+}
