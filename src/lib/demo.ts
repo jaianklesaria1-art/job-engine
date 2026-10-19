@@ -159,7 +159,7 @@ export function demoData() {
     job("j2", "UX Researcher", companies.health, 14, score("j2", 88, 94), { remote_type: "remote" }),
     job("j3", "UX Designer", companies.logi, 30, score("j3", 76, 84)),
     job("j4", "UX/UI Designer", companies.saas, 50, score("j4", 64, 72), { remote_type: "remote", country: "Remote" }),
-    job("j5", "Product Designer", companies.uk, 20, score("j5", 79, 88), { week_type: "B", country: "UK", city: "London", location: "London", remote_type: "hybrid" }),
+    job("j5", "Product Designer", companies.uk, 20, score("j5", 79, 88), { week_type: "B", country: "UK", city: "London", location: "London", remote_type: "hybrid", deadline: new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10), deadline_source: "Sample closing date" }),
     job("j6", "UX Analyst", companies.pay, 70, score("j6", 81, 86), { status: "shortlisted" }),
     job("j7", "AI Product Designer", companies.saas, 96, score("j7", 77, 89), { status: "applied", remote_type: "remote" }),
     job("j8", "UX Engineer", companies.logi, 110, score("j8", 58, 66), { status: "skipped" }),

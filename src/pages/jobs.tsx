@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { KanbanBoard, KanbanCard, KanbanCards, KanbanHeader, KanbanProvider } from "@/components/kibo-ui/kanban";
 import { JobCard } from "@/components/job-card";
-import { FreshnessBadge, ScoreBadge, SponsorBadge } from "@/components/job-bits";
+import { DeadlineBadge, FreshnessBadge, ScoreBadge, SponsorBadge, daysUntil } from "@/components/job-bits";
 import { PageTitle } from "@/components/page-title";
 import { useData } from "@/lib/data";
 import { freshnessOf, remoteLabel, timeAgo, jobDate, type Freshness } from "@/lib/format";
@@ -43,7 +43,7 @@ export function JobsPage() {
   const [week, setWeek] = useState<"A" | "B" | "all">("all");
   const [status, setStatusFilter] = useState<JobStatus | "open" | "all">("open");
   const [title, setTitle] = useState<string>("all");
-  const [sort, setSort] = useState<"newest" | "score" | "company">("newest");
+  const [sort, setSort] = useState<"newest" | "score" | "company" | "deadline">("newest");
   const [selected, setSelected] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -74,6 +74,11 @@ export function JobsPage() {
     return list.sort((a, b) => {
       if (sort === "score") return (b.score?.score_now ?? 0) - (a.score?.score_now ?? 0);
       if (sort === "company") return a.company_name.localeCompare(b.company_name);
+      if (sort === "deadline") {
+        // Open deadlines soonest first, then jobs with no stated date, then ones already closed.
+        const rank = (j: Job) => (!j.deadline ? 1e6 : daysUntil(j.deadline) < 0 ? 2e6 : daysUntil(j.deadline));
+        return rank(a) - rank(b) || jobDate(b).getTime() - jobDate(a).getTime();
+      }
       return jobDate(b).getTime() - jobDate(a).getTime();
     });
   }, [jobs, query, minScore, threshold, fresh, remote, week, title, status, sort]);
@@ -210,10 +215,11 @@ export function JobsPage() {
           <option value="A">Week A: India + Remote</option>
           <option value="B">Week B: International</option>
         </select>
-        <select aria-label="Sort" className={cn(selectClass, "md:ml-auto")} onChange={(e) => setSort(e.target.value as "newest" | "score" | "company")} value={sort}>
+        <select aria-label="Sort" className={cn(selectClass, "md:ml-auto")} onChange={(e) => setSort(e.target.value as "newest" | "score" | "company" | "deadline")} value={sort}>
           <option value="newest">Newest first</option>
           <option value="score">Highest score</option>
           <option value="company">Company A to Z</option>
+          <option value="deadline">Closing soonest</option>
         </select>
         {anyFilter && (
           <Button className="col-span-2 md:col-span-1" onClick={clearFilters} size="sm" variant="ghost">
@@ -286,7 +292,8 @@ export function JobsPage() {
                     <ScoreBadge score={j.score?.score_now} />
                   </TableCell>
                   <TableCell>
-                    <Link className="font-medium hover:underline" onClick={(e) => e.stopPropagation()} to={`/jobs/${j.id}`}>
+                    {j.deadline && <DeadlineBadge className="mb-1" deadline={j.deadline} source={j.deadline_source} />}
+                    <Link className="block font-medium hover:underline" onClick={(e) => e.stopPropagation()} to={`/jobs/${j.id}`}>
                       {j.title}
                     </Link>
                     <div className="text-muted-foreground text-xs">

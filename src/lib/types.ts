@@ -103,6 +103,9 @@ export interface Job {
   apply_url: string | null;
   description: string | null;
   salary_text: string | null;
+  /** Closing date the advert states (YYYY-MM-DD). Missing until the jobs table has the column. */
+  deadline?: string | null;
+  deadline_source?: string | null;
   week_type: "A" | "B";
   status: JobStatus;
   status_changed_at: string;

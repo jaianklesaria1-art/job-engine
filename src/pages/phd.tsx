@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { DashboardCard } from "@/components/dashboard-card";
+import { DeadlineBadge } from "@/components/job-bits";
 import { PageTitle } from "@/components/page-title";
 import { supabase } from "@/lib/supabase";
 import { useData } from "@/lib/data";
@@ -33,24 +34,6 @@ function EligibilityBadge({ status }: { status: PhdEligibility }) {
       )}
     >
       {eligibilityText[status]}
-    </span>
-  );
-}
-
-function daysLeft(deadline: string | null) {
-  if (!deadline) return null;
-  const end = new Date(`${deadline}T23:59:59`);
-  return Math.ceil((end.getTime() - Date.now()) / 864e5);
-}
-
-function DeadlineLabel({ deadline }: { deadline: string | null }) {
-  const d = daysLeft(deadline);
-  if (d === null) return <span className="text-muted-foreground text-xs">No deadline stated</span>;
-  const date = new Date(`${deadline}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  return (
-    <span className={cn("text-xs", d < 0 ? "text-muted-foreground line-through" : d <= 14 ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground")}>
-      Deadline {date}
-      {d >= 0 ? ` · ${d} ${d === 1 ? "day" : "days"} left` : " · closed"}
     </span>
   );
 }
@@ -178,6 +161,7 @@ function PhdCard({ p }: { p: PhdPosition }) {
     <li className="bg-background">
       <Link className="flex h-full flex-col gap-3 p-5 outline-none hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50" to={`/phd/${p.id}`}>
         <div className="flex flex-wrap items-center gap-2">
+          <DeadlineBadge deadline={p.deadline} />
           <EligibilityBadge status={p.eligibility_status} />
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px]">{PHD_STATUS_LABEL[p.status]}</span>
         </div>
@@ -190,7 +174,7 @@ function PhdCard({ p }: { p: PhdPosition }) {
         </div>
         {p.fit_reason && <p className="line-clamp-3 text-muted-foreground text-sm">{p.fit_reason}</p>}
         <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-          <DeadlineLabel deadline={p.deadline} />
+          {p.start_date ? <span className="text-muted-foreground text-xs">Starts {p.start_date}</span> : <span />}
           <span className="font-mono text-[11px] text-muted-foreground">
             {words} words · {done}/{p.checklist.length} ready
           </span>
@@ -243,8 +227,9 @@ export function PhdDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
+              <DeadlineBadge deadline={p.deadline} />
               <EligibilityBadge status={p.eligibility_status} />
-              <DeadlineLabel deadline={p.deadline} />
+              {!p.deadline && <span className="text-muted-foreground text-xs">No deadline stated</span>}
             </div>
             <h1 className="text-balance font-heading text-4xl leading-none tracking-tight md:text-5xl">{p.title}</h1>
             <p className="mt-2 text-sm">

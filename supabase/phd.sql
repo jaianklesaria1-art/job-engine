@@ -1,4 +1,4 @@
--- PhD tab: open PhD positions, eligibility, and a draft proposal for each.
+-- 2026-10-19 update: the PhD tab table, plus closing dates on jobs.
 -- Run once in the Supabase SQL editor (safe to run again).
 
 create table if not exists public.phd_positions (
@@ -45,3 +45,16 @@ create policy owner_all on public.phd_positions for all to authenticated
 do $$ begin
   alter publication supabase_realtime add table public.phd_positions;
 exception when duplicate_object then null; end $$;
+
+-- Job closing dates. Set only from a date the advert states (bots: db.mjs set-deadline).
+alter table public.jobs add column if not exists deadline date;
+alter table public.jobs add column if not exists deadline_source text;
+
+-- Web Designer joins the target titles.
+alter table public.settings alter column titles set default
+  array['Product Designer','UX Designer','UX/UI Designer','UX Analyst','UX Researcher','AI Product Designer','UX Engineer','Web Designer'];
+update public.settings set titles = array_append(titles, 'Web Designer') where id = 1 and not ('Web Designer' = any(titles));
+
+-- Lloyds UX Designer FTC: the advert says "End Date Wednesday 28 October 2026".
+update public.jobs set deadline = '2026-10-28', deadline_source = 'Closing date in the advert'
+  where id = 'ba22bddd-6e06-4669-ae3c-d0d1f428c01f' and deadline is null;

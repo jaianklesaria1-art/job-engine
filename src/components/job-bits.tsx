@@ -77,3 +77,31 @@ export function scoreAfterTicks(job: Job) {
   const added = s.green_items.filter((g) => s.ticked_items.includes(g.id)).reduce((sum, g) => sum + g.points, 0);
   return Math.min(s.score_possible, s.score_now + added);
 }
+
+/** Days until a YYYY-MM-DD closing date, counting the whole last day. */
+export function daysUntil(date: string) {
+  return Math.ceil((new Date(`${date}T23:59:59`).getTime() - Date.now()) / 864e5);
+}
+
+/** Closing date, shown first so it can't be missed. Amber within a week, red within 2 days, struck through once passed. */
+export function DeadlineBadge({ deadline, source, className }: { deadline: string | null | undefined; source?: string | null; className?: string }) {
+  if (!deadline) return null;
+  const d = daysUntil(deadline);
+  const date = new Date(`${deadline}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const left = d < 0 ? "closed" : d === 0 ? "closes today" : `${d} ${d === 1 ? "day" : "days"} left`;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-medium text-[11px]",
+        d < 0 && "border-dashed font-normal text-muted-foreground line-through",
+        d >= 0 && d <= 2 && "border-destructive/40 bg-destructive/10 text-destructive",
+        d > 2 && d <= 7 && "border-amber-600/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+        d > 7 && "border-foreground/20",
+        className,
+      )}
+      title={source ?? undefined}
+    >
+      Closes {date} · {left}
+    </span>
+  );
+}

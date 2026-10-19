@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { FreshnessBadge, ScoreBadge, SponsorBadge } from "@/components/job-bits";
+import { DeadlineBadge, FreshnessBadge, ScoreBadge, SponsorBadge } from "@/components/job-bits";
 import { ExternalLinkIcon } from "lucide-react";
 import { postedLabel, remoteLabel, sourceLinks } from "@/lib/format";
 import { STATUS_LABEL, type Job } from "@/lib/types";
@@ -22,7 +22,8 @@ export function JobCard({ job, selected, compact }: { job: Job; selected?: boole
       data-job-id={job.id}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <DeadlineBadge deadline={job.deadline} source={job.deadline_source} />
           <FreshnessBadge job={job} />
           <span className="text-muted-foreground text-xs">{postedLabel(job)}</span>
         </div>

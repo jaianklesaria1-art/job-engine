@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardCard } from "@/components/dashboard-card";
-import { FreshnessBadge, SponsorBadge, scoreAfterTicks } from "@/components/job-bits";
+import { DeadlineBadge, FreshnessBadge, SponsorBadge, scoreAfterTicks } from "@/components/job-bits";
 import { useData } from "@/lib/data";
 import { postedLabel, remoteLabel, sourceLinks, timeAgo } from "@/lib/format";
 import { STATUS_LABEL, type JobEvent, type ScorePart } from "@/lib/types";
@@ -84,6 +84,7 @@ export function JobDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
+              <DeadlineBadge deadline={job.deadline} source={job.deadline_source} />
               <FreshnessBadge job={job} />
               <span className="text-muted-foreground text-xs">{postedLabel(job)}</span>
               <span className={cn("rounded-md px-1.5 py-0.5 text-[11px]", applied ? "bg-emerald-600/10 text-emerald-800 dark:text-emerald-300" : "bg-muted")}>{STATUS_LABEL[job.status]}</span>

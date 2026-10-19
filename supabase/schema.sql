@@ -46,7 +46,7 @@ create table if not exists public.jobs (
   company_id uuid references public.companies(id) on delete set null,
   company_name text not null,
   title text not null,
-  title_group text,                                  -- one of Jai's 7 target titles
+  title_group text,                                  -- one of Jai's target titles (8 since Web Designer)
   seniority text,                                    -- junior / mid / unknown
   location text,
   city text,
@@ -203,7 +203,7 @@ create table if not exists public.requests (
 create table if not exists public.settings (
   id int primary key default 1 check (id = 1),
   week_type text not null default 'A' check (week_type in ('A','B')),
-  titles text[] not null default array['Product Designer','UX Designer','UX/UI Designer','UX Analyst','UX Researcher','AI Product Designer','UX Engineer'],
+  titles text[] not null default array['Product Designer','UX Designer','UX/UI Designer','UX Analyst','UX Researcher','AI Product Designer','UX Engineer','Web Designer'],
   freshness_days int not null default 5,
   score_threshold int not null default 75,
   email_cap int not null default 10,                -- warm-up week 1
