@@ -9,6 +9,7 @@ import { TodayPage } from "@/pages/today";
 import { JobsPage } from "@/pages/jobs";
 import { JobDetailPage } from "@/pages/job-detail";
 import { SettingsPage } from "@/pages/settings";
+import { PhdDetailPage, PhdPage } from "@/pages/phd";
 import { ComingSoonPage } from "@/pages/coming-soon";
 import { LoginPage } from "@/pages/login";
 
@@ -30,6 +31,8 @@ function Routed() {
         <Route element={<TodayPage />} path="/" />
         <Route element={<JobsPage />} path="/jobs" />
         <Route element={<JobDetailPage />} path="/jobs/:id" />
+        <Route element={<PhdPage />} path="/phd" />
+        <Route element={<PhdDetailPage />} path="/phd/:id" />
         <Route
           element={<ComingSoonPage bot="Contact Finder (Bot 2)" icon={Building2Icon} title="Companies" what="Every company with an open role, its size, funding, sponsorship and why it fits you." />}
           path="/companies"

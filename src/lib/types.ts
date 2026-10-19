@@ -184,3 +184,51 @@ export interface BotRequest {
   created_at: string;
   done_at: string | null;
 }
+
+export const PHD_STATUSES = ["to_apply", "drafting", "ready", "applied", "interview", "offer", "rejected", "skipped"] as const;
+export type PhdStatus = (typeof PHD_STATUSES)[number];
+
+export const PHD_STATUS_LABEL: Record<PhdStatus, string> = {
+  to_apply: "To apply",
+  drafting: "Drafting",
+  ready: "Ready to send",
+  applied: "Applied",
+  interview: "Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+  skipped: "Skipped",
+};
+
+export type PhdEligibility = "eligible" | "check" | "not_eligible";
+
+export interface ProposalSection {
+  heading: string;
+  body: string;
+}
+
+export interface PhdPosition {
+  id: string;
+  title: string;
+  university: string;
+  group_name: string | null;
+  supervisor: string | null;
+  contact_email: string | null;
+  city: string | null;
+  country: string | null;
+  url: string | null;
+  post_url: string | null;
+  deadline: string | null;
+  start_date: string | null;
+  funding: string | null;
+  eligibility: string | null;
+  eligibility_status: PhdEligibility;
+  fit_reason: string | null;
+  gaps: string[];
+  checklist: { item: string; done: boolean }[];
+  proposal: ProposalSection[];
+  proposal_limit: string | null;
+  status: PhdStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}

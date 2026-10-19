@@ -1,5 +1,5 @@
 // Preview data for ?demo=1. Every company is fictional and labelled "Sample" so it can't be mistaken for a real job.
-import type { Batch, Company, Job, JobEvent, JobScore, Reply, Run, Settings } from "@/lib/types";
+import type { Batch, Company, Job, JobEvent, JobScore, PhdPosition, Reply, Run, Settings } from "@/lib/types";
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 36e5).toISOString();
 
@@ -195,4 +195,42 @@ export function demoData() {
   };
 
   return { jobs, runs, replies, batches, events, settings, linkedinToSend: 4 };
+}
+
+export function demoPhds(): PhdPosition[] {
+  const inDays = (d: number) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
+  return [
+    {
+      id: "demo-phd-1",
+      title: "PhD in Sample Interaction Design",
+      university: "Sample University",
+      group_name: "Sample HCI Lab",
+      supervisor: "Dr Sample",
+      contact_email: null,
+      city: "Sampletown",
+      country: "Nowhere",
+      url: null,
+      post_url: null,
+      deadline: inDays(26),
+      start_date: "Spring 2027",
+      funding: "Sample funding text",
+      eligibility: "Sample eligibility text. Preview only.",
+      eligibility_status: "check",
+      fit_reason: "Preview row so the layout can be checked. Not a real position.",
+      gaps: ["Sample gap"],
+      checklist: [
+        { item: "CV", done: true },
+        { item: "Proposal", done: false },
+      ],
+      proposal: [
+        { heading: "Working title", body: "Sample title" },
+        { heading: "Research question", body: "Sample question" },
+      ],
+      proposal_limit: "2 pages",
+      status: "drafting",
+      notes: null,
+      created_at: hoursAgo(5),
+      updated_at: hoursAgo(1),
+    },
+  ];
 }

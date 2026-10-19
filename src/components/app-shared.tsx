@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   BarChart3Icon,
   BriefcaseIcon,
+  GraduationCapIcon,
   Building2Icon,
   KeyboardIcon,
   MailIcon,
@@ -30,6 +31,7 @@ export const navGroups: SidebarNavGroup[] = [
     items: [
       { title: "Today", path: "/", icon: <SunriseIcon /> },
       { title: "Jobs", path: "/jobs", icon: <BriefcaseIcon /> },
+      { title: "PhD", path: "/phd", icon: <GraduationCapIcon /> },
     ],
   },
   {
@@ -55,5 +57,6 @@ export const navLinks: SidebarNavItem[] = [...navGroups.flatMap((g) => g.items),
 
 export function pageForPath(pathname: string) {
   if (pathname.startsWith("/jobs/")) return { title: "Job detail", icon: <BriefcaseIcon /> };
+  if (pathname.startsWith("/phd/")) return { title: "PhD position", icon: <GraduationCapIcon /> };
   return navLinks.find((i) => i.path === pathname) ?? navLinks[0];
 }
