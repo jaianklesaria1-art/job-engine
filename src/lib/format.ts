@@ -60,9 +60,24 @@ export function greeting() {
 /** Country tab a job belongs to. Remote jobs also show under the Remote tab. */
 export function countryOf(job: Pick<Job, "country" | "city" | "location">) {
   const raw = `${job.country ?? ""} ${job.city ?? ""} ${job.location ?? ""}`.toLowerCase();
-  if (/united arab emirates|\buae\b|dubai|abu dhabi|sharjah/.test(raw)) return "Dubai / UAE";
-  if (/united kingdom|\buk\b|england|scotland|wales|london/.test(raw)) return "UK";
-  if (/india|bengaluru|bangalore|mumbai|pune|hyderabad|gurugram|delhi|chennai/.test(raw)) return "India";
+  if (/united arab emirates|uae|dubai|abu dhabi|sharjah/.test(raw)) return "Dubai / UAE";
+  if (/united kingdom|uk|gb|england|scotland|wales|london|manchester|edinburgh|bristol|birmingham|leeds|nottingham/.test(raw)) return "UK";
+  if (/india|bengaluru|bangalore|mumbai|pune|hyderabad|gurugram|gurgaon|noida|delhi|chennai/.test(raw)) return "India";
+  if (/saudi|ksa|riyadh|jeddah|dammam/.test(raw)) return "Saudi Arabia";
+  if (/qatar|doha/.test(raw)) return "Qatar";
+  if (/singapore/.test(raw)) return "Singapore";
+  if (/japan|tokyo|osaka|kyoto|fukuoka/.test(raw)) return "Japan";
+  if (/luxembourg/.test(raw)) return "Luxembourg";
+  if (/finland|helsinki|espoo|tampere|oulu/.test(raw)) return "Finland";
+  if (/denmark|copenhagen|aarhus|odense/.test(raw)) return "Denmark";
+  if (/sweden|stockholm|gothenburg|malm[oö]/.test(raw)) return "Sweden";
+  if (/netherlands|holland|amsterdam|rotterdam|utrecht|eindhoven|the hague/.test(raw)) return "Netherlands";
+  if (/germany|deutschland|berlin|munich|m[uü]nchen|hamburg|frankfurt|cologne|k[oö]ln|stuttgart/.test(raw)) return "Germany";
+  if (/ireland|dublin|cork|galway/.test(raw)) return "Ireland";
+  if (/canada|toronto|vancouver|montreal|ottawa|calgary/.test(raw)) return "Canada";
+  if (/new zealand|auckland|wellington|christchurch/.test(raw)) return "New Zealand";
+  if (/australia|sydney|melbourne|brisbane|perth|adelaide|canberra/.test(raw)) return "Australia";
+  if (/europe|emea|eu|france|paris|spain|madrid|barcelona|portugal|lisbon|italy|milan|poland|warsaw|krak[oó]w|belgium|brussels|austria|vienna|switzerland|zurich|norway|oslo|czech|prague|estonia|tallinn|greece|athens|hungary|budapest|romania|bucharest/.test(raw)) return "Europe";
   return job.country?.trim() || "Not stated";
 }
 

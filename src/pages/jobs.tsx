@@ -28,7 +28,27 @@ const STAGES: { value: Stage; label: string; has: (j: Job) => boolean }[] = [
 ];
 
 // Always shown, even when empty, so you can see at a glance where nothing has turned up yet.
-const FIXED_COUNTRIES = ["India", "UK", "Dubai / UAE"];
+// Every country Jai is applying to gets a tab, even when it has no jobs yet.
+const FIXED_COUNTRIES = [
+  "India",
+  "UK",
+  "Dubai / UAE",
+  "Saudi Arabia",
+  "Qatar",
+  "Singapore",
+  "Japan",
+  "Luxembourg",
+  "Finland",
+  "Denmark",
+  "Sweden",
+  "Netherlands",
+  "Germany",
+  "Ireland",
+  "Europe",
+  "Canada",
+  "Australia",
+  "New Zealand",
+];
 
 function readStored(key: string, fallback: string) {
   try {
