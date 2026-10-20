@@ -57,6 +57,15 @@ export function greeting() {
   return "Good evening";
 }
 
+/** Country tab a job belongs to. Remote jobs also show under the Remote tab. */
+export function countryOf(job: Pick<Job, "country" | "city" | "location">) {
+  const raw = `${job.country ?? ""} ${job.city ?? ""} ${job.location ?? ""}`.toLowerCase();
+  if (/united arab emirates|\buae\b|dubai|abu dhabi|sharjah/.test(raw)) return "Dubai / UAE";
+  if (/united kingdom|\buk\b|england|scotland|wales|london/.test(raw)) return "UK";
+  if (/india|bengaluru|bangalore|mumbai|pune|hyderabad|gurugram|delhi|chennai/.test(raw)) return "India";
+  return job.country?.trim() || "Not stated";
+}
+
 /** Each link the bots saved for a job, labelled by the site it came from. */
 export function sourceLinks(job: Pick<Job, "urls" | "sources">) {
   const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");

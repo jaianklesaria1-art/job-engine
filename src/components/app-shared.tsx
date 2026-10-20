@@ -3,6 +3,7 @@ import {
   BarChart3Icon,
   BriefcaseIcon,
   GraduationCapIcon,
+  HomeIcon,
   Building2Icon,
   KeyboardIcon,
   MailIcon,
@@ -27,18 +28,24 @@ export type SidebarNavGroup = {
 
 export const navGroups: SidebarNavGroup[] = [
   {
-    label: "Daily",
+    items: [{ title: "Home", path: "/", icon: <HomeIcon /> }],
+  },
+  {
+    label: "Jobs",
     items: [
-      { title: "Today", path: "/", icon: <SunriseIcon /> },
+      { title: "Today", path: "/today", icon: <SunriseIcon /> },
       { title: "Jobs", path: "/jobs", icon: <BriefcaseIcon /> },
-      { title: "PhD", path: "/phd", icon: <GraduationCapIcon /> },
+      { title: "Contacts", path: "/contacts", icon: <UsersIcon /> },
     ],
   },
   {
-    label: "People",
+    label: "Research",
+    items: [{ title: "PhD", path: "/phd", icon: <GraduationCapIcon /> }],
+  },
+  {
+    label: "Later",
     items: [
       { title: "Companies", path: "/companies", icon: <Building2Icon />, phase: "Bot 2" },
-      { title: "Contacts", path: "/contacts", icon: <UsersIcon />, phase: "Bot 2" },
       { title: "Outreach", path: "/outreach", icon: <MailIcon />, phase: "Bot 3" },
     ],
   },

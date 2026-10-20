@@ -18,14 +18,19 @@ import { useData } from "@/lib/data";
 import { freshnessOf } from "@/lib/format";
 
 export function AppSidebar({ onShortcuts }: { onShortcuts: () => void }) {
-  const { jobs, batches } = useData();
+  const { jobs, batches, contacts } = useData();
   const { pathname } = useLocation();
   const { setOpenMobile } = useSidebar();
   // Close the phone menu after picking a page
   useEffect(() => setOpenMobile(false), [pathname, setOpenMobile]);
   const newToday = jobs.filter((j) => j.status === "found" && freshnessOf(j) === "hot").length;
   const toApprove = batches.filter((b) => b.status === "pending").length;
-  const badges = { Jobs: newToday, Outreach: toApprove };
+  const toSend = contacts.filter(
+    (c) =>
+      (c.linkedin_note && c.linkedin_status === "not_sent") ||
+      (c.email && (c.email_status === "verified" || c.email_status === "accept_all") && !c.last_contacted_at),
+  ).length;
+  const badges = { Jobs: newToday, Outreach: toApprove, Contacts: toSend };
 
   return (
     <Sidebar

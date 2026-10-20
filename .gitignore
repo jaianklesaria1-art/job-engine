@@ -28,5 +28,5 @@ _unused-efferd/
 .env
 .env.*
 !.env.example
-components/
+/components/
 efferd-dashboard-2.registry.json

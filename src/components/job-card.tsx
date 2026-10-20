@@ -1,23 +1,42 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DeadlineBadge, FreshnessBadge, ScoreBadge, SponsorBadge } from "@/components/job-bits";
-import { ExternalLinkIcon } from "lucide-react";
+import { CheckIcon, ExternalLinkIcon, StarIcon, XIcon } from "lucide-react";
 import { postedLabel, remoteLabel, sourceLinks } from "@/lib/format";
-import { STATUS_LABEL, type Job } from "@/lib/types";
+import { STATUS_LABEL, type Job, type JobStatus } from "@/lib/types";
 import { useData } from "@/lib/data";
+
+const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** Applied and Skip take the card out of the to-review list, so it fades and drops away first. */
+export function useLeave(jobId: string) {
+  const { setStatus } = useData();
+  const [leaving, setLeaving] = useState<JobStatus | null>(null);
+  const leave = (status: JobStatus) => {
+    if (reducedMotion()) return void setStatus(jobId, status);
+    setLeaving(status);
+    setTimeout(() => void setStatus(jobId, status), 260);
+  };
+  return { leaving, leave };
+}
 
 export function JobCard({ job, selected, compact }: { job: Job; selected?: boolean; compact?: boolean }) {
   const { setStatus } = useData();
+  const { leaving, leave } = useLeave(job.id);
   const c = job.company;
   const missing = job.score?.keywords.filter((k) => !k.present).map((k) => k.keyword) ?? [];
+  const toReview = job.status === "found" || job.status === "shortlisted";
 
   return (
     <article
       aria-current={selected ? "true" : undefined}
       className={cn(
-        "group relative flex flex-col gap-3 bg-background p-4 outline-none transition-colors",
+        "group relative flex flex-col gap-3 bg-background p-5 outline-none transition-[background-color,opacity,transform,filter] duration-300 ease-out hover:bg-muted/30 motion-reduce:transition-none",
         selected && "bg-muted/60 ring-2 ring-ring ring-inset",
+        leaving === "applied" && "pointer-events-none scale-[0.97] bg-emerald-600/10 opacity-0",
+        leaving === "skipped" && "pointer-events-none translate-x-6 opacity-0 blur-[1px]",
       )}
       data-job-id={job.id}
     >
@@ -61,7 +80,14 @@ export function JobCard({ job, selected, compact }: { job: Job; selected?: boole
       <div className="flex flex-wrap items-center gap-2">
         <SponsorBadge status={c?.sponsor_status} />
         {job.status !== "found" && (
-          <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px]">{STATUS_LABEL[job.status]}</span>
+          <span
+            className={cn(
+              "rounded-md px-1.5 py-0.5 text-[11px]",
+              job.status === "shortlisted" ? "bg-amber-500/15 text-amber-800 dark:text-amber-300" : "bg-muted",
+            )}
+          >
+            {STATUS_LABEL[job.status]}
+          </span>
         )}
         {sourceLinks(job).slice(0, 3).map((l) => (
           <a
@@ -79,13 +105,18 @@ export function JobCard({ job, selected, compact }: { job: Job; selected?: boole
         ))}
       </div>
 
-      {!compact && job.status === "found" && (
-        <div className="relative z-10 flex gap-2">
-          <Button onClick={() => void setStatus(job.id, "shortlisted")} size="sm" variant="outline">
-            Shortlist <kbd className="ml-1 font-mono text-[10px] text-muted-foreground">S</kbd>
+      {!compact && toReview && (
+        <div className="relative z-10 mt-1 flex flex-wrap gap-2">
+          <Button onClick={() => leave("applied")} size="sm" title="Mark applied (A)" variant="outline">
+            <CheckIcon /> Applied
           </Button>
-          <Button onClick={() => void setStatus(job.id, "skipped")} size="sm" variant="ghost">
-            Skip <kbd className="ml-1 font-mono text-[10px] text-muted-foreground">X</kbd>
+          {job.status === "found" && (
+            <Button onClick={() => void setStatus(job.id, "shortlisted")} size="sm" title="Shortlist (S)" variant="ghost">
+              <StarIcon /> Shortlist
+            </Button>
+          )}
+          <Button className="ml-auto" onClick={() => leave("skipped")} size="sm" title="Skip for good (X)" variant="ghost">
+            <XIcon /> Skip
           </Button>
         </div>
       )}

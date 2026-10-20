@@ -18,7 +18,7 @@ import { DashboardCard } from "@/components/dashboard-card";
 import { JobCard } from "@/components/job-card";
 import { GettingStarted } from "@/components/getting-started";
 import { useData, useLastRuns } from "@/lib/data";
-import { freshnessOf, greeting, timeAgo } from "@/lib/format";
+import { freshnessOf, timeAgo } from "@/lib/format";
 import { BOT_LABEL, type BotName } from "@/lib/types";
 
 const replyLabel = {
@@ -95,7 +95,7 @@ export function TodayPage() {
           <p className="font-mono text-[11px] text-muted-foreground uppercase">
             {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
           </p>
-          <h1 className="mt-1 font-heading text-4xl leading-none tracking-tight md:text-5xl">{greeting()}, Jai.</h1>
+          <h1 className="mt-1 font-heading text-4xl leading-none tracking-tight md:text-5xl">Today's job search</h1>
           <p className="mt-2 text-muted-foreground text-sm">
             {firstRun
               ? "Welcome. Your job search starts here."

@@ -1,5 +1,5 @@
 // Preview data for ?demo=1. Every company is fictional and labelled "Sample" so it can't be mistaken for a real job.
-import type { Batch, Company, Job, JobEvent, JobScore, PhdPosition, Reply, Run, Settings } from "@/lib/types";
+import type { Batch, Company, Contact, Job, JobEvent, JobScore, PhdPosition, Reply, Run, Settings } from "@/lib/types";
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 36e5).toISOString();
 
@@ -194,7 +194,26 @@ export function demoData() {
     paused: false,
   };
 
-  return { jobs, runs, replies, batches, events, settings, linkedinToSend: 4 };
+  const contact = (id: string, jobId: string, name: string, role: string, type: Contact["type"], extra: Partial<Contact> = {}): Contact => {
+    const j = jobs.find((x) => x.id === jobId)!;
+    return {
+      id, company_id: j.company_id, job_id: jobId, name, role, type,
+      email: null, email_status: "not_found", linkedin_url: null, linkedin_status: "not_sent", linkedin_note: null,
+      last_contacted_at: null, do_not_contact: false, source: "Sample", created_at: hoursAgo(2),
+      company_name: j.company_name, job_title: j.title, ...extra,
+    };
+  };
+  const contacts: Contact[] = [
+    contact("c1", "j7", "Sample Hiring Manager", "Head of Design", "hiring_manager", {
+      email: "hiring.manager@example.com", email_status: "verified",
+      linkedin_note: "Sample note. Hi, I've just applied for the AI Product Designer role and would be glad to connect.",
+    }),
+    contact("c2", "j7", "Sample Peer", "Product Designer", "peer", {
+      linkedin_note: "Sample note. Hi, I'm a product designer and just applied to your team. Would love to connect.",
+    }),
+  ];
+
+  return { jobs, runs, replies, batches, events, settings, contacts, linkedinToSend: 2 };
 }
 
 export function demoPhds(): PhdPosition[] {

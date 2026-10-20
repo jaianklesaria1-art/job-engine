@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
-import { Building2Icon, MailIcon, TrophyIcon, UsersIcon } from "lucide-react";
+import { Building2Icon, MailIcon, TrophyIcon } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { DataProvider } from "@/lib/data";
 import { OWNER_EMAIL, supabase } from "@/lib/supabase";
+import { HomePage } from "@/pages/home";
 import { TodayPage } from "@/pages/today";
+import { ContactsPage } from "@/pages/contacts";
 import { JobsPage } from "@/pages/jobs";
 import { JobDetailPage } from "@/pages/job-detail";
 import { SettingsPage } from "@/pages/settings";
@@ -28,7 +30,8 @@ function Routed() {
   return (
     <AppShell>
       <Routes>
-        <Route element={<TodayPage />} path="/" />
+        <Route element={<HomePage />} path="/" />
+        <Route element={<TodayPage />} path="/today" />
         <Route element={<JobsPage />} path="/jobs" />
         <Route element={<JobDetailPage />} path="/jobs/:id" />
         <Route element={<PhdPage />} path="/phd" />
@@ -37,10 +40,7 @@ function Routed() {
           element={<ComingSoonPage bot="Contact Finder (Bot 2)" icon={Building2Icon} title="Companies" what="Every company with an open role, its size, funding, sponsorship and why it fits you." />}
           path="/companies"
         />
-        <Route
-          element={<ComingSoonPage bot="Contact Finder (Bot 2)" icon={UsersIcon} title="Contacts" what="Hiring managers and peers with verified emails, plus a LinkedIn note for each to send by hand." />}
-          path="/contacts"
-        />
+        <Route element={<ContactsPage />} path="/contacts" />
         <Route
           element={<ComingSoonPage bot="Outreach (Bot 3)" icon={MailIcon} title="Outreach" what="Email batches to approve. Nothing sends until you say yes." />}
           path="/outreach"

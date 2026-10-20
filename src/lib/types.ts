@@ -113,6 +113,29 @@ export interface Job {
   score: JobScore | null;
 }
 
+export interface Contact {
+  id: string;
+  company_id: string | null;
+  job_id: string | null;
+  name: string;
+  role: string | null;
+  type: "hiring_manager" | "peer";
+  email: string | null;
+  email_status: "verified" | "accept_all" | "not_found" | "invalid";
+  linkedin_url: string | null;
+  linkedin_status: "not_sent" | "sent" | "accepted";
+  linkedin_note: string | null;
+  last_contacted_at: string | null;
+  do_not_contact: boolean;
+  source: string | null;
+  created_at: string;
+  company_name: string | null;
+  job_title: string | null;
+}
+
+/** Statuses that mean Jai has applied and the job has moved on from the to-review list. */
+export const APPLIED_STATUSES: JobStatus[] = ["applied", "contacted", "replied", "interview", "offer"];
+
 export interface JobEvent {
   id: number;
   job_id: string;

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { demoData } from "@/lib/demo";
-import { STATUS_LABEL, type Batch, type Job, type JobEvent, type JobScore, type JobStatus, type BotRequest, type Reply, type RequestKind, type Run, type Settings } from "@/lib/types";
+import { STATUS_LABEL, type Batch, type Contact, type Job, type JobEvent, type JobScore, type JobStatus, type BotRequest, type Reply, type RequestKind, type Run, type Settings } from "@/lib/types";
 
 interface DataState {
   demo: boolean;
@@ -16,6 +16,8 @@ interface DataState {
   settings: Settings | null;
   linkedinToSend: number;
   requests: BotRequest[];
+  contacts: Contact[];
+  updateContact: (id: string, patch: Partial<Contact>, okMessage?: string) => Promise<void>;
   setStatus: (jobId: string, status: JobStatus) => Promise<void>;
   toggleTick: (jobId: string, itemId: string) => Promise<void>;
   sendRequest: (kind: RequestKind, payload?: Record<string, unknown>) => Promise<void>;
@@ -39,6 +41,7 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
   const [settings, setSettings] = useState<Settings | null>(null);
   const [linkedinToSend, setLinkedinToSend] = useState(0);
   const [requests, setRequests] = useState<BotRequest[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
@@ -53,6 +56,7 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
       setBatches(d.batches);
       setSettings(d.settings);
       setLinkedinToSend(d.linkedinToSend);
+      setContacts(d.contacts);
       demoEvents.current = d.events;
       setLoading(false);
       setLastLoadedAt(new Date());
@@ -60,12 +64,15 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
     }
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
     const [j, r, p, b, s, l, q] = await Promise.all([
+      // New jobs from the last 30 days, plus every job Jai has acted on, however old.
+      // Skipped jobs never come back: the row stays so the bots don't re-add it, but it's not loaded.
       supabase
         .from("jobs")
         .select("*, company:companies(*), score:job_scores(*)")
-        .gte("first_seen_at", since)
+        .neq("status", "skipped")
+        .or(`first_seen_at.gte.${since},status.in.(shortlisted,applied,contacted,replied,interview,offer,rejected)`)
         .order("first_seen_at", { ascending: false })
-        .limit(500),
+        .limit(1000),
       supabase.from("runs").select("*").order("started_at", { ascending: false }).limit(40),
       supabase
         .from("replies")
@@ -76,10 +83,10 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
       supabase.from("settings").select("*").eq("id", 1).maybeSingle(),
       supabase
         .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("linkedin_status", "not_sent")
+        .select("*, company:companies(name), job:jobs(title)")
         .eq("do_not_contact", false)
-        .not("linkedin_note", "is", null),
+        .order("created_at", { ascending: true })
+        .limit(1000),
       supabase.from("requests").select("*").order("created_at", { ascending: false }).limit(50),
     ]);
     const firstError = [j, r, p, b, s, l, q].find((x) => x.error)?.error;
@@ -104,7 +111,16 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
       );
       setBatches((b.data ?? []) as Batch[]);
       setSettings((s.data ?? null) as Settings | null);
-      setLinkedinToSend(l.count ?? 0);
+      const cs = (l.data ?? []).map((row) => {
+        const { company, job, ...rest } = row as Record<string, unknown>;
+        return {
+          ...rest,
+          company_name: one(company as { name?: string } | null)?.name ?? null,
+          job_title: one(job as { title?: string } | null)?.title ?? null,
+        };
+      }) as Contact[];
+      setContacts(cs);
+      setLinkedinToSend(cs.filter((c) => c.linkedin_status === "not_sent" && c.linkedin_note).length);
       setRequests((q.data ?? []) as BotRequest[]);
       setLastLoadedAt(new Date());
     }
@@ -157,8 +173,14 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
         await writeStatus(jobId, before.status);
         return;
       }
+      const where =
+        status === "skipped"
+          ? "Gone for good. The bots won't add it back."
+          : status === "applied"
+            ? "Moved to the Applied tab. Its contacts are on the Contacts page."
+            : `Was ${STATUS_LABEL[before.status]}.`;
       toast.success(`${before.title} at ${before.company_name}: ${STATUS_LABEL[status]}`, {
-        description: demo ? "Preview mode: not saved." : `Was ${STATUS_LABEL[before.status]}.`,
+        description: demo ? "Preview mode: not saved." : where,
         action: { label: "Undo", onClick: () => void writeStatus(jobId, before.status) },
       });
     },
@@ -212,6 +234,32 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
     [demo],
   );
 
+  const updateContact = useCallback(
+    async (id: string, patch: Partial<Contact>, okMessage?: string) => {
+      const before = contacts.find((c) => c.id === id);
+      const apply = (p: Partial<Contact>) => setContacts((cs) => cs.map((c) => (c.id === id ? { ...c, ...p } : c)));
+      apply(patch);
+      if (patch.linkedin_status !== undefined)
+        setLinkedinToSend((n) => Math.max(0, n + (patch.linkedin_status === "not_sent" ? 1 : before?.linkedin_status === "not_sent" ? -1 : 0)));
+      if (demo) return;
+      const dbPatch: Partial<Contact> = { ...patch };
+      delete dbPatch.company_name;
+      delete dbPatch.job_title;
+      const { error: e } = await supabase.from("contacts").update(dbPatch).eq("id", id);
+      if (e) {
+        if (before) apply(before);
+        toast.error(`Couldn't save: ${e.message}`);
+        return;
+      }
+      if (okMessage && before) {
+        const undo: Partial<Contact> = {};
+        for (const k of Object.keys(patch) as (keyof Contact)[]) (undo as Record<string, unknown>)[k] = before[k];
+        toast.success(okMessage, { action: { label: "Undo", onClick: () => void updateContact(id, undo) } });
+      }
+    },
+    [demo, contacts],
+  );
+
   const loadEvents = useCallback(
     async (jobId: string) => {
       if (demo) return demoEvents.current.filter((e) => e.job_id === jobId);
@@ -239,6 +287,8 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
       settings,
       linkedinToSend,
       requests,
+      contacts,
+      updateContact,
       setStatus,
       toggleTick,
       sendRequest,
@@ -246,7 +296,7 @@ export function DataProvider({ demo, children }: { demo: boolean; children: Reac
       loadEvents,
       reload,
     }),
-    [demo, loading, error, lastLoadedAt, jobs, runs, replies, batches, settings, linkedinToSend, requests, setStatus, toggleTick, sendRequest, updateSettings, loadEvents, reload],
+    [demo, loading, error, lastLoadedAt, jobs, runs, replies, batches, settings, linkedinToSend, requests, contacts, updateContact, setStatus, toggleTick, sendRequest, updateSettings, loadEvents, reload],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

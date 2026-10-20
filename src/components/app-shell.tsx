@@ -18,7 +18,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useHotkeys({
     "?": () => setHelpOpen((o) => !o),
-    "g t": () => navigate("/"),
+    "g h": () => navigate("/"),
+    "g t": () => navigate("/today"),
+    "g p": () => navigate("/phd"),
     "g j": () => navigate("/jobs"),
     "g c": () => navigate("/contacts"),
     "g o": () => navigate("/outreach"),

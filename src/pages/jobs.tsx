@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { KanbanIcon, LayoutGridIcon, SearchIcon, SlidersHorizontalIcon, TableIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,38 @@ import { JobCard } from "@/components/job-card";
 import { DeadlineBadge, FreshnessBadge, ScoreBadge, SponsorBadge, daysUntil } from "@/components/job-bits";
 import { PageTitle } from "@/components/page-title";
 import { useData } from "@/lib/data";
-import { freshnessOf, remoteLabel, timeAgo, jobDate, type Freshness } from "@/lib/format";
-import { JOB_STATUSES, STATUS_LABEL, type Job, type JobStatus } from "@/lib/types";
+import { TabBar } from "@/components/tab-bar";
+import { countryOf, freshnessOf, remoteLabel, timeAgo, jobDate, type Freshness } from "@/lib/format";
+import { APPLIED_STATUSES, STATUS_LABEL, type Job, type JobStatus } from "@/lib/types";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 
 type View = "cards" | "table" | "board";
 const VIEWS: View[] = ["cards", "table", "board"];
+
+type Stage = "review" | "applied" | "rejected";
+const STAGES: { value: Stage; label: string; has: (j: Job) => boolean }[] = [
+  { value: "review", label: "To review", has: (j) => j.status === "found" || j.status === "shortlisted" },
+  { value: "applied", label: "Applied", has: (j) => APPLIED_STATUSES.includes(j.status) },
+  { value: "rejected", label: "Rejected", has: (j) => j.status === "rejected" },
+];
+
+// Always shown, even when empty, so you can see at a glance where nothing has turned up yet.
+const FIXED_COUNTRIES = ["India", "UK", "Dubai / UAE"];
+
+function readStored(key: string, fallback: string) {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function store(key: string, v: string) {
+  try {
+    localStorage.setItem(key, v);
+  } catch {
+    /* storage blocked */
+  }
+}
 
 function readView(): View {
   try {
@@ -30,7 +56,7 @@ function readView(): View {
 }
 
 const selectClass =
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:w-auto";
+  "h-9 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-sm transition-colors hover:border-foreground/40 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:w-auto";
 
 export function JobsPage() {
   const { jobs, settings, setStatus, loading } = useData();
@@ -41,7 +67,14 @@ export function JobsPage() {
   const [fresh, setFresh] = useState<Freshness | "all">("all");
   const [remote, setRemote] = useState<Job["remote_type"] | "all">("all");
   const [week, setWeek] = useState<"A" | "B" | "all">("all");
-  const [status, setStatusFilter] = useState<JobStatus | "open" | "all">("open");
+  const [params, setParams] = useSearchParams();
+  const stage: Stage = (["review", "applied", "rejected"] as const).find((s) => s === params.get("tab")) ?? "review";
+  const setStage = (s: Stage) => setParams(s === "review" ? {} : { tab: s }, { replace: true });
+  const [country, setCountryState] = useState(() => readStored("jobs-country", "all"));
+  const setCountry = (c: string) => {
+    setCountryState(c);
+    store("jobs-country", c);
+  };
   const [title, setTitle] = useState<string>("all");
   const [sort, setSort] = useState<"newest" | "score" | "company" | "deadline">("newest");
   const [selected, setSelected] = useState(0);
@@ -58,17 +91,34 @@ export function JobsPage() {
     }
   };
 
+  // Skipped jobs never show anywhere. They only stay in memory for a few seconds so Undo works.
+  const live = useMemo(() => jobs.filter((j) => j.status !== "skipped"), [jobs]);
+  const inCountry = (j: Job, c: string) => c === "all" || (c === "Remote" ? j.remote_type === "remote" : countryOf(j) === c);
+  const stageDef = STAGES.find((s) => s.value === stage) ?? STAGES[0];
+
+  const countryTabs = useMemo(() => {
+    const inStage = live.filter(stageDef.has);
+    const others = [...new Set(live.map(countryOf))].filter((c) => !FIXED_COUNTRIES.includes(c) && c !== "Remote").sort((a, b) => (a === "Not stated" ? 1 : b === "Not stated" ? -1 : a.localeCompare(b)));
+    return ["all", ...FIXED_COUNTRIES, "Remote", ...others].map((c) => ({
+      value: c,
+      label: c === "all" ? "All countries" : c,
+      count: inStage.filter((j) => inCountry(j, c)).length,
+    }));
+  }, [live, stageDef]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stageTabs = STAGES.map((s) => ({ value: s.value, label: s.label, count: live.filter((j) => s.has(j) && inCountry(j, country)).length }));
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = jobs.filter((j) => {
+    const list = live.filter((j) => {
+      if (!stageDef.has(j) || !inCountry(j, country)) return false;
       if (q && !`${j.title} ${j.company_name} ${j.city ?? ""} ${j.country ?? ""}`.toLowerCase().includes(q)) return false;
-      if (minScore === "threshold" && (j.score?.score_now ?? 0) < threshold) return false;
-      if (fresh !== "all" && freshnessOf(j) !== fresh) return false;
+      // Score and age filters are for picking what to apply to; they don't hide jobs you've already applied to.
+      if (stage === "review" && minScore === "threshold" && (j.score?.score_now ?? 0) < threshold) return false;
+      if (stage === "review" && fresh !== "all" && freshnessOf(j) !== fresh) return false;
       if (remote !== "all" && j.remote_type !== remote) return false;
       if (week !== "all" && j.week_type !== week) return false;
       if (title !== "all" && j.title_group !== title) return false;
-      if (status === "open" && ["skipped", "rejected"].includes(j.status)) return false;
-      if (status !== "open" && status !== "all" && j.status !== status) return false;
       return true;
     });
     return list.sort((a, b) => {
@@ -81,9 +131,9 @@ export function JobsPage() {
       }
       return jobDate(b).getTime() - jobDate(a).getTime();
     });
-  }, [jobs, query, minScore, threshold, fresh, remote, week, title, status, sort]);
+  }, [live, stageDef, country, stage, query, minScore, threshold, fresh, remote, week, title, sort]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => setSelected(0), [query, minScore, fresh, remote, week, title, status, sort]);
+  useEffect(() => setSelected(0), [query, minScore, fresh, remote, week, title, stage, country, sort]);
   useEffect(() => {
     document.querySelector(`[data-job-id="${filtered[selected]?.id}"]`)?.scrollIntoView({ block: "nearest" });
   }, [selected, filtered]);
@@ -93,7 +143,7 @@ export function JobsPage() {
   }, [filtered.length, selected]);
 
   const activeFilters =
-    Number(minScore !== "threshold") + Number(fresh !== "all") + Number(remote !== "all") + Number(week !== "all") + Number(status !== "open") + Number(title !== "all");
+    Number(minScore !== "threshold") + Number(fresh !== "all") + Number(remote !== "all") + Number(week !== "all") + Number(title !== "all");
 
   const clearFilters = () => {
     setQuery("");
@@ -101,8 +151,8 @@ export function JobsPage() {
     setFresh("all");
     setRemote("all");
     setWeek("all");
-    setStatusFilter("open");
     setTitle("all");
+    setCountry("all");
   };
   const anyFilter = activeFilters > 0 || query.trim() !== "";
 
@@ -113,6 +163,7 @@ export function JobsPage() {
       k: () => setSelected((i) => Math.max(0, i - 1)),
       Enter: () => current && navigate(`/jobs/${current.id}`),
       s: () => current && void setStatus(current.id, "shortlisted"),
+      a: () => current && void setStatus(current.id, "applied"),
       x: () => current && void setStatus(current.id, "skipped"),
       v: () => setView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]),
       "/": () => searchRef.current?.focus(),
@@ -143,14 +194,23 @@ export function JobsPage() {
         }
         description={
           <>
-            {filtered.length} of {jobs.length} jobs from the last 30 days. Scores show CV fit out of 100.
+            {stage === "review"
+              ? "New jobs from the last 30 days. Mark one Applied and it moves to the Applied tab. Skip it and it's gone for good."
+              : stage === "applied"
+                ? "Every job you've applied to, kept for good. Contacts for each are on the Contacts page."
+                : "Jobs that turned you down."}
             <span data-hint="keyboard"> Press ? for shortcuts.</span>
           </>
         }
         title="Jobs"
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-3 flex flex-col gap-2">
+        <TabBar items={stageTabs} label="Stage" onChange={setStage} size="lg" value={stage} />
+        <TabBar items={countryTabs} label="Country" onChange={setCountry} value={country} />
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-start gap-2">
         <div className="relative min-w-0 flex-1 md:w-80 md:flex-none xl:w-64">
           <SearchIcon aria-hidden="true" className="-translate-y-1/2 absolute top-1/2 left-2.5 size-4 text-muted-foreground" />
           <Input
@@ -177,25 +237,20 @@ export function JobsPage() {
           className={cn("w-full grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center xl:w-auto xl:flex-1", showFilters ? "grid" : "hidden")}
           id="job-filters"
         >
-        <select aria-label="Score" className={selectClass} onChange={(e) => setMinScore(e.target.value as "threshold" | "all")} value={minScore}>
-          <option value="threshold">Score {threshold}+</option>
-          <option value="all">Any score</option>
-        </select>
-        <select aria-label="Freshness" className={selectClass} onChange={(e) => setFresh(e.target.value as Freshness | "all")} value={fresh}>
-          <option value="all">Any age</option>
-          <option value="hot">Hot (under 24 h)</option>
-          <option value="fresh">Fresh (1 to 3 days)</option>
-          <option value="ok">Recent (3 to 5 days)</option>
-        </select>
-        <select aria-label="Status" className={selectClass} onChange={(e) => setStatusFilter(e.target.value as JobStatus | "open" | "all")} value={status}>
-          <option value="open">Open (hide skipped)</option>
-          <option value="all">All statuses</option>
-          {JOB_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
+        {stage === "review" && (
+          <>
+            <select aria-label="Score" className={selectClass} onChange={(e) => setMinScore(e.target.value as "threshold" | "all")} value={minScore}>
+              <option value="threshold">Score {threshold}+</option>
+              <option value="all">Any score</option>
+            </select>
+            <select aria-label="Freshness" className={selectClass} onChange={(e) => setFresh(e.target.value as Freshness | "all")} value={fresh}>
+              <option value="all">Any age</option>
+              <option value="hot">Hot (under 24 h)</option>
+              <option value="fresh">Fresh (1 to 3 days)</option>
+              <option value="ok">Recent (3 to 5 days)</option>
+            </select>
+          </>
+        )}
         <select aria-label="Job title" className={selectClass} onChange={(e) => setTitle(e.target.value)} value={title}>
           <option value="all">All titles</option>
           {(settings?.titles ?? []).map((t) => (
@@ -243,13 +298,13 @@ export function JobsPage() {
 
       {!loading && filtered.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-md border border-dashed p-10 text-center text-muted-foreground text-sm">
-          {jobs.length === 0 ? (
+          {live.length === 0 ? (
             "No jobs yet. Job Scout fills this list on its next run."
+          ) : !anyFilter && country === "all" ? (
+            stage === "applied" ? "Nothing applied yet. Mark a job Applied and it lands here." : stage === "rejected" ? "No rejections. Good." : "Nothing to review. You're caught up."
           ) : (
             <>
-              <span>
-                No jobs match these filters. {jobs.length} {jobs.length === 1 ? "job is" : "jobs are"} hidden.
-              </span>
+              <span>Nothing here with these filters{country !== "all" ? ` in ${country}` : ""}.</span>
               <Button onClick={clearFilters} size="sm" variant="outline">
                 Clear filters
               </Button>
@@ -322,7 +377,7 @@ export function JobsPage() {
         </div>
       )}
 
-      {view === "board" && <JobsBoard jobs={filtered} onMove={(id, s) => void setStatus(id, s)} />}
+      {view === "board" && <JobsBoard jobs={live.filter((j) => inCountry(j, country))} onMove={(id, s) => void setStatus(id, s)} />}
     </div>
   );
 }

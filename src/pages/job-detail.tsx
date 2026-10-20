@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardCard } from "@/components/dashboard-card";
+import { ContactRow } from "@/components/contact-row";
 import { DeadlineBadge, FreshnessBadge, SponsorBadge, scoreAfterTicks } from "@/components/job-bits";
 import { useData } from "@/lib/data";
 import { postedLabel, remoteLabel, sourceLinks, timeAgo } from "@/lib/format";
@@ -26,8 +27,17 @@ const verdictText = { apply: "Apply", tailor: "Apply with tailoring", skip: "Ski
 export function JobDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { jobs, loading, setStatus, toggleTick, sendRequest, loadEvents, requests } = useData();
+  const { jobs, contacts, loading, setStatus, toggleTick, sendRequest, loadEvents, requests } = useData();
   const job = jobs.find((j) => j.id === id);
+  const jobContacts = contacts
+    .filter((p) => p.job_id === id)
+    .sort((a, b) => (a.type === b.type ? 0 : a.type === "hiring_manager" ? -1 : 1));
+  // Skipping hides the job for good, so go back to the list straight away.
+  const skip = () => {
+    if (!job) return;
+    void setStatus(job.id, "skipped");
+    navigate("/jobs");
+  };
   const [events, setEvents] = useState<JobEvent[]>([]);
   const [showDesc, setShowDesc] = useState(false);
 
@@ -39,7 +49,7 @@ export function JobDetailPage() {
     {
       a: () => job && void setStatus(job.id, "applied"),
       s: () => job && void setStatus(job.id, "shortlisted"),
-      x: () => job && void setStatus(job.id, "skipped"),
+      x: skip,
       Escape: () => navigate("/jobs"),
     },
     Boolean(job),
@@ -48,7 +58,7 @@ export function JobDetailPage() {
   if (!job) {
     return (
       <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground text-sm">
-        {loading ? "Loading the job..." : "This job isn't in the last 30 days of results."}{" "}
+        {loading ? "Loading the job..." : "This job was skipped or is older than 30 days, so it's hidden."}{" "}
         <Link className="underline" to="/jobs">
           Back to jobs
         </Link>
@@ -145,7 +155,7 @@ export function JobDetailPage() {
                 <Button onClick={() => void setStatus(job.id, "applied")} variant="outline">
                   <CheckIcon /> Mark applied <kbd className="font-mono text-[10px] text-muted-foreground">A</kbd>
                 </Button>
-                <Button onClick={() => void setStatus(job.id, "skipped")} variant="ghost">
+                <Button onClick={skip} variant="ghost">
                   <XIcon /> Skip
                 </Button>
               </>
@@ -401,7 +411,15 @@ export function JobDetailPage() {
               <CardTitle className="font-heading text-xl font-normal">Contacts</CardTitle>
               <CardDescription>Hiring managers and peers, with verified emails and LinkedIn notes.</CardDescription>
             </CardHeader>
-            <CardContent className="py-6 text-center text-muted-foreground text-sm">Arrives with Contact Finder (Bot 2).</CardContent>
+            {jobContacts.length === 0 ? (
+              <CardContent className="py-6 text-center text-muted-foreground text-sm">No contacts found for this job yet.</CardContent>
+            ) : (
+              <ul className="divide-y">
+                {jobContacts.map((p) => (
+                  <ContactRow contact={p} key={p.id} />
+                ))}
+              </ul>
+            )}
           </DashboardCard>
 
           <DashboardCard className="flex-1 gap-0">

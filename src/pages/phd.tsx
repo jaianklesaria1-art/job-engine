@@ -42,7 +42,7 @@ const proposalText = (p: PhdPosition) => p.proposal.map((s) => `${s.heading}\n\n
 const wordCount = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
 
 /** Loads phd_positions and keeps them live. Demo mode uses fictional rows. */
-function usePhds() {
+export function usePhds() {
   const { demo } = useData();
   const [rows, setRows] = useState<PhdPosition[]>([]);
   const [loading, setLoading] = useState(true);
